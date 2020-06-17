@@ -1,180 +1,465 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>GPG Online</title>
-	<script src="openpgp.min.js"></script>
-	<style type="text/css">
-		body, button, textarea, pre {
-			font-family: Consolas;
-		}
+    <title>GPG Online</title>
+    <script src="openpgp.min.js"></script>
+    <style type="text/css">
+        /*
+         * GENERIC STYLES
+         */
+        * {margin: 0; box-sizing: border-box;}
 
-		textarea {
-			width: 500px;
-			border: 1px solid silver;
-			border-radius: 3px;
-			padding: 0.2rem;
-		}
+        html {
+            min-height: 100vh;
+            min-width: 100vw;
+            background: #f8f8f8;
+            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-size: 17px;
+            line-height: 1.7;
+        }
 
-		button {
-			font-size: 1rem;
-			border: 1px solid black;
-			background: white;
-			cursor: pointer;
-			padding: 3px 5px 1px 5px;
-		}
+        /*
+         * ELEMENT STYLING
+         */
 
-		pre, textarea, input {
-			font-size: 0.8rem;
-		}
+        textarea, input[type="text"] {
+            width: 100%;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            padding: 0.2rem;
+            margin-bottom: 10px;
+        }
 
-		h2 {
-			margin: 0;
-			font-weight: normal;
-		}
+        a {
+            color: #61dafb;
+        }
 
-		#private-key {
-			display: none;
-		}
+        h1 {
+            margin: 0;
+            font-size: 26px;
+        }
 
-		#private-key.visible {
-			display: block;
-		}
+        pre, textarea, input {
+            font-size: 0.8rem;
+        }
 
-		.hint {
-			font-size: 0.7rem;
-			margin: 0;
-			color: gray;
-		}
-	</style>
+        h2 {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        /*
+         * COMPONENT STYLES
+         */
+
+        .button {
+            cursor: pointer;
+            border: 0;
+            display: inline-block;
+            font-size: 16px;
+            background-color: #61dafb;
+            color: #000000;
+            padding: 10px 25px;
+            white-space: nowrap;
+            transition: background-color 0.2s ease-out;
+            -webkit-transition: background-color 0.2s ease-out;
+            -moz-transition: background-color 0.2s ease-out;
+            text-decoration: none;
+        }
+
+        .button:hover {
+            background-color: #ffffff;
+        }
+
+        .button-alt {
+            background: #fff;
+            border: 1px solid #61dafb;
+            color: #61dafb;
+            font-weight: bold;
+        }
+
+        .button-alt:hover {
+            background: #61dafb;
+            color: white;
+        }
+
+        .hint {
+            font-size: 0.7rem;
+            margin: 0;
+            color: gray;
+        }
+
+        .wrapper {
+            margin: 0 20px;
+        }
+
+
+
+        /*
+         * SEGMENT STYLES
+         */
+
+        /** HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            color: #f8f8f8;
+            background: #20232a;
+            padding: 10px 20px;
+        }
+
+        .header .button {
+            font-weight: bold;
+            border-radius: 8px;
+            border: 2px solid #292c34;
+        }
+
+
+
+        /** Footer */
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #7d7d7d;
+            position: absolute;
+            bottom: 15px;
+            width: 100vw;
+        }
+
+
+
+        /** HERO */
+        .hero {
+            background-color: #282c34;
+            color: #ffffff;
+            padding: 20px;
+        }
+
+
+
+        /** New Public Key POPUP */
+        .popup {
+            display: none;
+            margin: auto;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popup .close {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            background: rgba(0,0,0,.4);
+        }
+
+        .popup--visible {
+            display: flex;
+        }
+
+        .add-key {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            border: 2px solid silver;
+            z-index: 1;
+        }
+
+        .add-key .buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+
+
+
+        /** Existing Public Key List */
+        .keys-list {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .keys-list label {
+            margin-right: 15px;
+        }
+
+        .gpg-fingerprint {
+            font-size: 8px;
+            color: #404040;
+            display: block;
+        }
+
+
+
+        /** File Upload */
+        .file_upload {
+            position: relative;
+        }
+
+        .hidden_uploader {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+        }
+
+
+
+        /** Text Encrypt */
+        .message-row {
+            display: flex;
+            margin: 0 -5px;
+        }
+
+        .message-row textarea {
+            margin: 5px;
+            min-height: 150px;
+        }
+
+        .content_type {
+            margin: 30px 0;
+            padding-top: 10px;
+            border-top: 2px solid #ececec;
+        }
+    </style>
 </head>
 <body>
 
-<h1>GPG Online</h1>
-
-<div class="message">
-	<h2>Message to encrypt</h2>
-	<textarea rows="5"></textarea>
+<div class="header">
+    <h1>GPG Online</h1>
+    <a class="button" href="https://github.com/SamJUK/gpg-online">Check out the source code</a>
 </div>
 
-<div id="public-keys">
-	<div class="public-key">
-		<h2>Public key</h2>
-		<p class="hint">Only the person who has a private key will be able to decrypt the message.</p>
-		<textarea rows="5"></textarea>
-	</div>
+<div class="hero">
+    <p>This page uses industry vetted open source <a href="https://github.com/openpgpjs/openpgpjs">OpenPGP.js</a> and
+        does not submit anything to the server. Everything happens in your browser and is completely lost when you close
+        this page.</p>
 </div>
 
-<div id="private-key">
-	<h2>Private Key</h2>
-	<textarea rows="5"></textarea>
-	<h2>Passphrase</h2>
-	<textarea rows="2"></textarea>
+<div class="wrapper">
+
+    <div class="keys">
+        <div id="public-keys">
+            <div class="public-key">
+                <h2>Public Keys</h2>
+                <p class="hint">Tick the keys you want to encrypt to content for, Only the people who have a private key for one of the public keys will be able to decrypt the message.</p>
+
+                <div class="keys-list" id="keys-list"></div>
+                <button class="button" id="add-public-key">Add Additional Public Key</button>
+            </div>
+
+            <div id="public-key-popup" class="popup">
+                <div class="close" data-popup-close></div>
+                <div class="add-key">
+                    <h3>Add Custom Public Key</h3>
+                    <input type="text" id="new-key-label" name="new-key-label" placeholder="New Key Label">
+                    <textarea rows="5" id="new-key-content" name="new-key-content" placeholder="New Key Content"></textarea>
+
+                    <br>
+
+                    <div class="buttons">
+                        <button data-popup-close class="button button-alt" id="exit-public-keys">Exit</button>
+                        <button class="button button" id="save-public-keys">Save Key</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="content" class="content">
+
+<!--        <div class="file content_type">-->
+<!--            <h2>File to encrypt</h2>-->
+<!--            <button class="button file_upload" id="encrypt-file">Encrypt file<input class="hidden_uploader" id="uploader" type="file" multiple /></button>-->
+<!--        </div>-->
+
+        <div class="message content_type">
+            <h2>Message to encrypt</h2>
+            <div class="message-row">
+                <textarea rows="5" id="message-raw" placeholder="Text to be encrypted"></textarea>
+                <textarea rows="5" id="message-encrypted" readonly placeholder="Encrypted Message"></textarea>
+            </div>
+            <button class="button" id="encrypt">Encrypt Message</button>
+        </div>
+    </div>
 </div>
 
-<div>
-	<input id="uploader" type="file" />
-</div>
-<div id="output"></div>
-<button id="encrypt">Encrypt</button>
-<button id="add-public-key">Add Public Key</button>
-<button id="add-private-key">Add Private Key</button>
+<footer class="footer">
+    <p>Client side Browser application to PGP encrypt messages / files.</p>
+    <p>Forked from: <a href="https://github.com/oz123/gpg-online">OZ123/gpg-online</a></p>
+</footer>
+
 <script>
-const query = query => document.querySelector(query);
-const queryAll = query => Array.prototype.slice.apply(document.querySelectorAll(query));
-const publicKeyTemplate = query('#public-keys').innerHTML;
-
-query("#uploader").addEventListener('change', function(evt) {
-	var files = evt.target.files; // FileList object
-	var reader = new FileReader();
-	reader.onload = (async function(evt) {
-		var link;
-		link = document.createElement('a');
-
-		const keys = await getKeyList();
-
-		var arrayBuffer = this.result;
-		var fileData = new Uint8Array(arrayBuffer);
-		const options = {
-			message: openpgp.message.fromBinary(fileData),
-			publicKeys: keys,
-			privateKey: "",
-			armor: true,
-		};
-
-		return openpgp.encrypt(options).then(results => {
-			link.setAttribute('href', window.URL.createObjectURL(
-			new Blob([results.data]), {type: "application/pgp-encrypted"})
-			);
-			link.setAttribute('download', "encrypted.file.gpg");
-			link.innerHTML = files[0].name + ".pgp";
-			query('#output').appendChild(link);
-		});
-	})();
-
-	reader.readAsArrayBuffer(this.files[0]);
-
-}, false);
-
-query('#add-public-key').addEventListener('click', () => {
-	const element = document.createElement('div');
-	element.innerHTML = publicKeyTemplate;
-	query('#public-keys').appendChild(element);
-});
-
-query('#add-private-key').addEventListener('click', () => {
-	query('#private-key').className = 'visible';
-});
-
-function getKeyList() {
-	var pubKeyData = queryAll('.public-key textarea').map(el => getKey(el, 'public'))
-	return Promise.all(pubKeyData.map(key => openpgp.key.readArmored(key))).then(xs => xs.map(a => a.keys[0]));
-}
+    // -----------------
+    // HELPER FUNCTIONS
+    // -----------------
+    const query = query => document.querySelector(query);
+    const queryAll = query => Array.prototype.slice.apply(document.querySelectorAll(query));
 
 
-function getKey(textarea, type) {
-	const { value } = textarea;
-	if (!value) {
-		throw new Error(`${type} key missing`);
-	}
-	return value;
-}
+    // -----------------
+    // ADD NEW PUBLIC KEY POPUP
+    // -----------------
+    const openPopup = () => query('#public-key-popup').classList.add('popup--visible');
+    const closePopup = () => query('#public-key-popup').classList.remove('popup--visible');
 
-function getPrivateKey() {
-	if (query('#private-key').className !== 'visible') {
-		return Promise.resolve();
-	}
+    query('#add-public-key').addEventListener('click', openPopup);
+    queryAll('[data-popup-close]').forEach(close => close.addEventListener('click', closePopup))
 
-	const [key, passphrase] = queryAll('#private-key textarea');
-	return openpgp.decryptKey({
-		privateKey: getKey(key, 'private'),
-		passphrase: passphrase.value,
-	})
-	.then(({key}) => key)
-	;
-}
+    query('#save-public-keys').addEventListener('click', async () => {
+        let pub_key = query('#new-key-content').value;
+        window.public_keys.push({
+            'label': query('#new-key-label').value,
+            'fingerprint': await getFingerPrint(pub_key),
+            'key': pub_key
+        });
+        addKey(window.public_keys.slice(-1)[0]);
+        closePopup();
+    });
 
-query('#encrypt').addEventListener('click', async () => {
-	const keys = await getKeyList();
-	getPrivateKey().then(privateKey => {
-		const options = {
-			message: openpgp.message.fromText(query('.message textarea').value),
-			publicKeys: keys,
-			privateKey: privateKey,
-			armor: true,
-		};
 
-		return openpgp.encrypt(options).then(results => {
-			query('#output').innerHTML = results.data;
-		});
-	})
-	.catch(err => alert(err.message))
-	;
-});
+    // -----------------
+    // FILE ENCRYPTION
+    // -----------------
+    let uploader = query("#uploader");
+    if (uploader) {
+        uploader.addEventListener('change', function (evt) {
+            var files = evt.target.files;
+            var reader = new FileReader();
+            reader.onload = (async function (evt) {
+                var link;
+                link = document.createElement('a');
+
+                const keys = await getKeyList();
+
+                var arrayBuffer = this.result;
+                var fileData = new Uint8Array(arrayBuffer);
+                const options = {
+                    message: openpgp.message.fromBinary(fileData),
+                    publicKeys: keys,
+                    privateKey: "",
+                    armor: true,
+                };
+
+                return openpgp.encrypt(options).then(results => {
+                    link.setAttribute('href', window.URL.createObjectURL(
+                        new Blob([results.data]), {type: "application/pgp-encrypted"})
+                    );
+                    link.setAttribute('download', "encrypted.file.gpg");
+                    link.innerHTML = files[0].name + ".pgp";
+                    query('#output').appendChild(link);
+                });
+            })();
+
+            reader.readAsArrayBuffer(this.files[0]);
+
+        }, false);
+    }
+
+    //
+    // ENCRYPTION
+    //
+
+    function getKeyList() {
+        let publicKeys = queryAll('#keys-list .key [data-key]:checked').map(input => input.value);
+        let publicKeyArmour = publicKeys.map(key => openpgp.key.readArmored(key));
+        return Promise.all(publicKeyArmour).then(xs => xs.map(a => a.keys[0]));
+    }
+
+    query('#encrypt').addEventListener('click', async () => {
+        const keys = await getKeyList();
+        // console.log(keys);
+        const options = {
+            message: openpgp.message.fromText(query('#message-raw').value),
+            publicKeys: keys,
+            privateKey: '',
+            armor: true,
+        };
+
+        return openpgp.encrypt(options).then(results => {
+            query('#message-encrypted').innerHTML = results.data;
+            console.log(results.data);
+        });
+    });
+
+
+    // ----------------------
+    // PUBLIC KEY MANAGEMENT
+    // ----------------------
+
+    window.public_keys = [
+        {
+            'label': 'Sam Personal',
+            'fingerprint': 'C91A858CB779F819AAD9CC43E3F0AA83483B430F',
+            'key': "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n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\n9T4RtbuZ8jf2X06XQLg=\n=nsJ9\n-----END PGP PUBLIC KEY BLOCK-----"
+        },
+        {
+            'label': 'Sam Work',
+            'fingerprint': '04B2C6F950119D50CF10553EFFE8B8D842448728',
+            'key': "-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n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\nvUrcO46IzVqg\n=u4hx\n-----END PGP PUBLIC KEY BLOCK-----"
+        }
+    ];
+
+    function addKey(key) {
+        // console.log('Adding Key', key);
+        let template = `<label id="key" class="key" for="pk-${key.label}">
+                        <input type="checkbox" name="pk-${key.label}" id="pk-${key.label}" data-key value="${key.key}"/>
+                        <span data-label>${key.label}</span>
+                        <span class="gpg-fingerprint" data-fingerprint>${hypenateFingerPrint(key.fingerprint)}</span>
+                    </label>`;
+
+        query('#keys-list').innerHTML += template;
+    }
+
+    function regenerateKeys() {
+        query('#keys-list').innerHTML = '';
+        window.public_keys.forEach(addKey);
+    }
+
+    async function getFingerPrint(public_key) {
+        // console.log('KEY: ', public_key);
+
+        return await openpgp.key.readArmored(public_key).then(res => {
+            if (res.err) {
+                console.error(res.err);
+                alert('Error getting fingerprint: ' + res.err);
+                return false;
+            }
+
+            return res.keys[0].getFingerprint()
+        });
+    }
+
+    function hypenateFingerPrint(fingerprint) {
+        let output = '';
+        let buffer = '';
+        for (let i = 0; i < fingerprint.length; i++) {
+            buffer += fingerprint[i];
+            if (buffer.length >= 4) {
+                output += '-' + buffer;
+                buffer = '';
+            }
+        }
+        return output.substr(1);
+    }
+
+    regenerateKeys();
 </script>
-
-<p>
-	This page uses industry vetted open source <a href="https://github.com/openpgpjs/openpgpjs">OpenPGP.js</a> and does not submit anything to the server. Everything happens in your browser and is completely lost when you close this page.
-</p>
 
 </body>
 </html>
